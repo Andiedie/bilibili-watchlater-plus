@@ -6,8 +6,7 @@ module.exports = {
     browser: true
   },
   globals: {
-    axios: true,
-    dateFns: true
+    axios: true
   },
   // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: 'standard',
