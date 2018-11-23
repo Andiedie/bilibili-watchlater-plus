@@ -4,7 +4,8 @@
 // @author       Andiedie
 // @license      MIT License
 // @homepageURL  https://github.com/Andiedie/bilibili-watchlater-plus
-// @include      https://*.bilibili.com/*
+// @include      https://t.bilibili.com/pages/nav/index*
+// @include      https://www.bilibili.com/watchlater*
 // @description  Bilibili 稍后再看功能增强
 // @version      0.0.1
 // @grant        GM_addStyle
@@ -13,14 +14,17 @@
 
 (async function () {
   'use strict';
-  switch (location.hostname) {
-    case 't.bilibili.com':
-      const watchlaterList = await getWatchlaterList();
-      const observer = new MutationObserver(syncTrends.bind(null, watchlaterList));
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
+  if (location.hostname === 't.bilibili.com') {
+    const watchlaterList = await getWatchlaterList();
+    new MutationObserver(syncDynamic.bind(null, watchlaterList)).observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  } else if (location.href.startsWith('https://www.bilibili.com/watchlater')) {
+    replaceBangumiLink();
+    new MutationObserver(autoJump).observe(document.body, {
+      childList: true
+    });
   }
   async function getWatchlaterList () {
     const { data: { data } } = await axios.get('https://api.bilibili.com/x/v2/history/toview/web', {
@@ -61,7 +65,7 @@
     });
     if (data.code !== 0) throw new Error(data.message);
   }
-  async function syncTrends (watchlaterList, mutationList) {
+  async function syncDynamic (watchlaterList, mutationList) {
     for (const mutation of mutationList) {
       for (let node of mutation.addedNodes) {
         if (!node.className || !node.className.includes('d-data')) continue;
@@ -81,7 +85,6 @@
           }
         } else {
           const aid = await bangumiAid(node.href);
-          console.log(aid);
           const added = watchlaterList.includes(aid);
           const watchLaterTrigger = document.createElement('div');
           watchLaterTrigger.classList.add('watch-later-trigger', 'watch-later');
@@ -94,12 +97,10 @@
             event.stopPropagation();
             event.preventDefault();
             if (event.target.classList.contains('added')) {
-              console.log('remove');
               await removeFromWatchlater(aid);
               watchLaterHint.textContent = '稍后再看';
               watchLaterTrigger.classList.remove('added');
             } else {
-              console.log('add');
               await addToWatchlater(aid);
               watchLaterHint.textContent = '移除';
               watchLaterTrigger.classList.add('added');
@@ -110,4 +111,28 @@
       }
     }
   };
+  async function replaceBangumiLink () {
+    while (true) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (document.querySelector('.av-item') || document.querySelector('.abnormal-item')) break;
+    }
+    for (const one of document.querySelectorAll('.av-item')) {
+      if (one.querySelector('.user').href === 'https://space.bilibili.com/928123') {
+        const picEle = one.querySelector('a.av-pic');
+        const tEle = one.querySelector('a.t');
+        const aid = picEle.href.match(/av(\d+)/)[1];
+        picEle.href = tEle.href = `//www.bilibili.com/av${aid}`;
+      }
+    }
+  }
+  function autoJump (mutationList) {
+    for (const mutation of mutationList) {
+      for (const one of mutation.addedNodes) {
+        if (one.className && one.className.includes('bili-dialog') && one.querySelector('header').textContent === '跳转播放') {
+          one.querySelector('.b-btn').click();
+          window.close();
+        }
+      }
+    }
+  }
 })();
