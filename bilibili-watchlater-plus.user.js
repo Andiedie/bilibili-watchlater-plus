@@ -21,9 +21,9 @@
       subtree: true
     });
   } else if (location.href.startsWith('https://www.bilibili.com/watchlater')) {
-    replaceBangumiLink();
-    new MutationObserver(autoJump).observe(document.body, {
-      childList: true
+    new MutationObserver(handleBangumiPlay).observe(document.body, {
+      childList: true,
+      subtree: true
     });
   }
   async function getWatchlaterList () {
@@ -111,26 +111,29 @@
       }
     }
   };
-  async function replaceBangumiLink () {
-    while (true) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if (document.querySelector('.av-item') || document.querySelector('.abnormal-item')) break;
-    }
-    for (const one of document.querySelectorAll('.av-item')) {
-      if (one.querySelector('.user').href === 'https://space.bilibili.com/928123') {
-        const picEle = one.querySelector('a.av-pic');
-        const tEle = one.querySelector('a.t');
-        const aid = picEle.href.match(/av(\d+)/)[1];
-        picEle.href = tEle.href = `//www.bilibili.com/av${aid}`;
-      }
-    }
-  }
-  function autoJump (mutationList) {
+  function handleBangumiPlay (mutationList) {
     for (const mutation of mutationList) {
       for (const one of mutation.addedNodes) {
-        if (one.className && one.className.includes('bili-dialog') && one.querySelector('header').textContent === '跳转播放') {
+        if (!one.className) continue;
+        if (one.className.includes('list-box')) {
+          // 稍后再看列表页面 替换番剧的默认链接
+          for (const item of one.querySelectorAll('.av-item')) {
+            if (item.querySelector('.user > span').textContent === '哔哩哔哩番剧') {
+              const picEle = item.querySelector('a.av-pic');
+              const tEle = item.querySelector('a.t');
+              const aid = picEle.href.match(/av(\d+)/)[1];
+              picEle.href = tEle.href = `//www.bilibili.com/av${aid}`;
+            }
+          }
+        } else if (one.className.includes('bili-dialog') && one.querySelector('header').textContent === '跳转播放') {
+          // 稍后再看播放页面 点击番剧视频之后，自动跳转到播放界面
           one.querySelector('.b-btn').click();
-          window.close();
+          if (document.querySelector('[data-state-play=true] .bilibili-player-watchlater-info-name').textContent === '哔哩哔哩番剧') {
+            const aid = location.href.match(/av(\d+)/)[1];
+            location.href = `https://www.bilibili.com/av${aid}`;
+          } else {
+            window.close();
+          }
         }
       }
     }
