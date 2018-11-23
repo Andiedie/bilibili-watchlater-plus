@@ -8,7 +8,6 @@
 // @include      https://www.bilibili.com/watchlater*
 // @description  Bilibili 稍后再看功能增强
 // @version      0.0.1
-// @grant        GM_addStyle
 // @require      https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js
 // ==/UserScript==
 
