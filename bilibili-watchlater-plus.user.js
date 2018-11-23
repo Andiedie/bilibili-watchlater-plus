@@ -126,11 +126,11 @@
           }
         } else if (one.className.includes('bili-dialog') && one.querySelector('header').textContent === '跳转播放') {
           // 稍后再看播放页面 点击番剧视频之后，自动跳转到播放界面
-          one.querySelector('.b-btn').click();
           if (document.querySelector('[data-state-play=true] .bilibili-player-watchlater-info-name').textContent === '哔哩哔哩番剧') {
             const aid = location.href.match(/av(\d+)/)[1];
             location.href = `https://www.bilibili.com/av${aid}`;
           } else {
+            one.querySelector('.b-btn').click();
             window.close();
           }
         }
