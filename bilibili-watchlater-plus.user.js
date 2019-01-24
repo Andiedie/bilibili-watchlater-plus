@@ -97,7 +97,7 @@
   }
   function handleEmptySpreadModule (root) {
     const selector = '.spread-module:not(:has(.watch-later-trigger))';
-    const list = $(root).find(selector).addBack(selector);
+    const list = $(root).parents(selector).addBack(selector);
     list.each((_, ele) => {
       const href = $(ele).find('a[href]').attr('href');
       const aid = /av(\d+)/.exec(href)[1];
