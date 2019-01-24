@@ -38,32 +38,54 @@
   // -----------------hint-----------------
 
   // -----------------Utils-----------------
-  // 替换默认的 （首页、动态iframe）
+  // 替换首页、动态iframe
   function replaceWatchLaterTrigger (root) {
     const list = $(root).find('.watch-later-trigger');
     list.each((_, ele) => {
-      const href =
+      if (ele.dataset && ele.dataset.skipMutation) {
+        console.log('replaceWatchLaterTrigger skip');
+      } else {
+        const href =
         $(ele).parents('a[data-target-url]').attr('data-target-url') ||
         $(ele).parents('a[href]').attr('href') ||
         $(ele).siblings('a[href]').attr('href');
-      const aid = /av(\d+)/.exec(href)[1];
-      const clone = createWatchLaterTrigger(aid);
-      ele.replaceWith(clone);
+        const aid = /av(\d+)/.exec(href)[1];
+        const clone = createWatchLater(aid, 'watch-later-trigger w-later watch-later', 'added');
+        ele.replaceWith(clone);
+      }
     });
   }
-  // 替换默认的 （空间）
+  // 替换空间
   function replaceIWatchLater (root) {
     const list = $(root).find('.i-watchlater');
     list.each((_, ele) => {
-      console.log(ele);
-      const href =
-        $(ele).parents('a[href]').attr('href') ||
-        $(ele).siblings('a[href]').attr('href');
-      if (href === 'javascript:;') {
-        console.log('该视频已失效，跳过');
+      if (ele.dataset && ele.dataset.skipMutation) {
+        console.log('replaceIWatchLater skip');
       } else {
+        const href =
+        $(ele).parents('a[href]').attr('href');
+        if (href === 'javascript:;') {
+          console.log('该视频已失效，跳过');
+        } else {
+          const aid = /av(\d+)/.exec(href)[1];
+          const clone = createWatchLater(aid, 'i-watchlater', 'has-select');
+          ele.replaceWith(clone);
+        }
+      }
+    });
+  }
+  // 替换动态首页
+  function replaceSeeLater (root) {
+    const list = $(root).find('.see-later');
+    list.each((_, ele) => {
+      if (ele.dataset && ele.dataset.skipMutation) {
+        console.log('replaceSeeLater skip');
+      } else {
+        const href =
+        $(ele).parents('a[href]').attr('href');
         const aid = /av(\d+)/.exec(href)[1];
-        const clone = createIWatchLater(aid);
+        const clone = createWatchLater(aid, 'see-later', 'done');
+        Object.assign(clone.dataset, ele.dataset);
         ele.replaceWith(clone);
       }
     });
@@ -74,7 +96,7 @@
     list.each((_, ele) => {
       const href = $(ele).find('a[href]').attr('href');
       const aid = /av(\d+)/.exec(href)[1];
-      const clone = createWatchLaterTrigger(aid);
+      const clone = createWatchLater(aid, 'watch-later-trigger w-later watch-later', 'added');
       $(ele).find('.pic').append(clone);
     });
   }
@@ -84,18 +106,18 @@
     list.each(async (_, ele) => {
       const href = ele.href;
       const aid = await bangumiAid(href);
-      const clone = createWatchLaterTrigger(aid);
+      const clone = createWatchLater(aid, 'watch-later-trigger w-later watch-later', 'added');
       ele.appendChild(clone);
     });
   }
-  function createWatchLaterTrigger (aid) {
+  function createWatchLater (aid, className, done) {
     const clone = document.createElement('div');
     clone.dataset.skipMutation = 'true';
-    clone.className = 'watch-later-trigger w-later watch-later';
+    clone.className = className;
     clone.dataset.aid = aid;
     watchLaterList().then(list => {
       if (list.includes(aid)) {
-        clone.classList.add('added');
+        clone.classList.add(done);
         clone.dataset.added = true;
       }
     });
@@ -117,52 +139,12 @@
       if (target.dataset.added) {
         await removeWatchLater(target.dataset.aid);
         target.removeAttribute('data-added');
-        clone.classList.remove('added');
+        clone.classList.remove(done);
         showHint('稍后再看+', target);
       } else {
         await addWatchLater(target.dataset.aid);
         clone.dataset.added = true;
-        clone.classList.add('added');
-        showHint('移除稍后再看+', target);
-      }
-    };
-    return clone;
-  }
-  function createIWatchLater (aid) {
-    const clone = document.createElement('div');
-    clone.dataset.skipMutation = 'true';
-    clone.classList = 'i-watchlater';
-    clone.dataset.aid = aid;
-    watchLaterList().then(list => {
-      if (list.includes(aid)) {
-        clone.classList.add('has-select');
-        clone.dataset.added = true;
-      }
-    });
-    clone.onmouseenter = (event) => {
-      const target = event.currentTarget;
-      if (target.dataset.added) {
-        showHint('移除稍后再看+', target);
-      } else {
-        showHint('稍后再看+', target);
-      }
-    };
-    clone.onmouseout = (_) => {
-      hideHint();
-    };
-    clone.onclick = async (event) => {
-      event.stopPropagation();
-      event.preventDefault();
-      const target = event.currentTarget;
-      if (target.dataset.added) {
-        await removeWatchLater(target.dataset.aid);
-        target.removeAttribute('data-added');
-        clone.classList.remove('has-select');
-        showHint('稍后再看+', target);
-      } else {
-        await addWatchLater(target.dataset.aid);
-        clone.dataset.added = true;
-        clone.classList.add('has-select');
+        clone.classList.add(done);
         showHint('移除稍后再看+', target);
       }
     };
@@ -208,7 +190,7 @@
   }
   async function bangumiAid (link) {
     const { data } = await axios.get(link);
-    const initState = JSON.stringify(/window.__INITIAL_STATE__=(.*?);/.exec(data)[1]);
+    const initState = JSON.parse(/window.__INITIAL_STATE__=(.*?);/.exec(data)[1]);
     const aid = initState.epInfo.aid;
     return aid;
   }
@@ -220,11 +202,12 @@
     for (const mutation of mutationList) {
       for (const one of mutation.addedNodes) {
         if (one.dataset && one.dataset.skipMutation) {
-          console.log('skip');
+          console.log('MutationObserver skip');
           continue;
         }
         replaceWatchLaterTrigger(one);
         replaceIWatchLater(one);
+        replaceSeeLater(one);
         handleEmptyIndexBangumi();
         handleEmptyDynamicBangumi();
       }
@@ -238,6 +221,8 @@
   replaceWatchLaterTrigger(document.body);
   // space.bilibili.com
   replaceIWatchLater(document.body);
+  // t.bilibili.com
+  replaceSeeLater(document.body);
   // www.bilibili.com
   handleEmptyIndexBangumi();
   // t.bilibili.com/pages/nav/index
