@@ -3,16 +3,17 @@ module.exports = {
     ecmaVersion: 8,
   },
   env: {
-    browser: true
+    browser: true,
   },
   globals: {
     axios: true,
-    GM_addStyle: true
+    GM_addStyle: true,
+    $: true,
   },
   // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: 'standard',
   // add your custom rules here
   rules: {
-    'semi': ['warn', 'always']
+    'semi': ['warn', 'always'],
   }
 };
