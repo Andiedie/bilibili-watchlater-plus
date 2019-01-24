@@ -38,6 +38,7 @@
   // -----------------hint-----------------
 
   // -----------------Utils-----------------
+  // 替换默认的 （首页、动态iframe）
   function replaceWatchLaterTrigger (root) {
     const list = $(root).find('.watch-later-trigger');
     list.each((_, ele) => {
@@ -50,54 +51,26 @@
       ele.replaceWith(clone);
     });
   }
+  // 替换默认的 （空间）
   function replaceIWatchLater (root) {
     const list = $(root).find('.i-watchlater');
     list.each((_, ele) => {
-      const clone = ele.cloneNode();
+      console.log(ele);
       const href =
         $(ele).parents('a[href]').attr('href') ||
         $(ele).siblings('a[href]').attr('href');
-      const aid = /av(\d+)/.exec(href)[1];
-      clone.dataset.aid = aid;
-      watchLaterList().then(list => {
-        if (list.includes(aid)) {
-          clone.classList.add('has-select');
-          clone.dataset.added = true;
-        }
-      });
-      clone.onmouseenter = (event) => {
-        const target = event.currentTarget;
-        if (target.dataset.added) {
-          showHint('移除稍后再看+', target);
-        } else {
-          showHint('稍后再看+', target);
-        }
-      };
-      clone.onmouseout = (_) => {
-        hideHint();
-      };
-      clone.onclick = async (event) => {
-        event.stopPropagation();
-        event.preventDefault();
-        const target = event.currentTarget;
-        if (target.dataset.added) {
-          await removeWatchLater(target.dataset.aid);
-          target.removeAttribute('data-added');
-          clone.classList.remove('has-select');
-          showHint('稍后再看+', target);
-        } else {
-          await addWatchLater(target.dataset.aid);
-          clone.dataset.added = true;
-          clone.classList.add('has-select');
-          showHint('移除稍后再看+', target);
-        }
-      };
-      ele.replaceWith(clone);
+      if (href === 'javascript:;') {
+        console.log('该视频已失效，跳过');
+      } else {
+        const aid = /av(\d+)/.exec(href)[1];
+        const clone = createIWatchLater(aid);
+        ele.replaceWith(clone);
+      }
     });
   }
-  function handleEmptySpreadModule (root) {
-    const selector = '.spread-module:not(:has(.watch-later-trigger))';
-    const list = $(root).parents(selector).addBack(selector);
+  // 处理首页番剧空白的问题
+  function handleEmptyIndexBangumi () {
+    const list = $('.spread-module:not(:has(.watch-later-trigger))');
     list.each((_, ele) => {
       const href = $(ele).find('a[href]').attr('href');
       const aid = /av(\d+)/.exec(href)[1];
@@ -105,8 +78,19 @@
       $(ele).find('.pic').append(clone);
     });
   }
+  // 处理动态iframe番剧空白的问题
+  function handleEmptyDynamicBangumi () {
+    const list = $('.d-data>.preview>a[href]:not(:has(.watch-later-trigger))');
+    list.each(async (_, ele) => {
+      const href = ele.href;
+      const aid = await bangumiAid(href);
+      const clone = createWatchLaterTrigger(aid);
+      ele.appendChild(clone);
+    });
+  }
   function createWatchLaterTrigger (aid) {
     const clone = document.createElement('div');
+    clone.dataset.skipMutation = 'true';
     clone.className = 'watch-later-trigger w-later watch-later';
     clone.dataset.aid = aid;
     watchLaterList().then(list => {
@@ -139,6 +123,46 @@
         await addWatchLater(target.dataset.aid);
         clone.dataset.added = true;
         clone.classList.add('added');
+        showHint('移除稍后再看+', target);
+      }
+    };
+    return clone;
+  }
+  function createIWatchLater (aid) {
+    const clone = document.createElement('div');
+    clone.dataset.skipMutation = 'true';
+    clone.classList = 'i-watchlater';
+    clone.dataset.aid = aid;
+    watchLaterList().then(list => {
+      if (list.includes(aid)) {
+        clone.classList.add('has-select');
+        clone.dataset.added = true;
+      }
+    });
+    clone.onmouseenter = (event) => {
+      const target = event.currentTarget;
+      if (target.dataset.added) {
+        showHint('移除稍后再看+', target);
+      } else {
+        showHint('稍后再看+', target);
+      }
+    };
+    clone.onmouseout = (_) => {
+      hideHint();
+    };
+    clone.onclick = async (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      const target = event.currentTarget;
+      if (target.dataset.added) {
+        await removeWatchLater(target.dataset.aid);
+        target.removeAttribute('data-added');
+        clone.classList.remove('has-select');
+        showHint('稍后再看+', target);
+      } else {
+        await addWatchLater(target.dataset.aid);
+        clone.dataset.added = true;
+        clone.classList.add('has-select');
         showHint('移除稍后再看+', target);
       }
     };
@@ -182,6 +206,12 @@
     });
     if (data.code !== 0) throw new Error(data.message);
   }
+  async function bangumiAid (link) {
+    const { data } = await axios.get(link);
+    const initState = JSON.stringify(/window.__INITIAL_STATE__=(.*?);/.exec(data)[1]);
+    const aid = initState.epInfo.aid;
+    return aid;
+  }
   // -----------------Utils-----------------
 
   // -----------------Run Immediately-----------------
@@ -189,9 +219,14 @@
   new MutationObserver((mutationList) => {
     for (const mutation of mutationList) {
       for (const one of mutation.addedNodes) {
+        if (one.dataset && one.dataset.skipMutation) {
+          console.log('skip');
+          continue;
+        }
         replaceWatchLaterTrigger(one);
         replaceIWatchLater(one);
-        handleEmptySpreadModule(one);
+        handleEmptyIndexBangumi();
+        handleEmptyDynamicBangumi();
       }
     }
   }).observe(document.body, {
@@ -204,6 +239,8 @@
   // space.bilibili.com
   replaceIWatchLater(document.body);
   // www.bilibili.com
-  handleEmptySpreadModule(document.body);
+  handleEmptyIndexBangumi();
+  // t.bilibili.com/pages/nav/index
+  handleEmptyDynamicBangumi();
   // -----------------Run Immediately-----------------
 })();
