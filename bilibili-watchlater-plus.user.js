@@ -137,7 +137,7 @@
   const handlePlaying = _.debounce(() => {
     const result = /watchlater\/#\/av(\d+)/.exec(location.href);
     if (result) {
-      location.href = `https://www.bilibili.com/video/av${result[1]}?watch-later-plus`;
+      location.href = `https://www.bilibili.com/video/av${result[1]}#watch-later-plus`;
     }
   }, DEBOUNCE_WAIT);
 
@@ -216,6 +216,186 @@
     });
     if (data.code !== 0) throw new Error(data.message);
   }
+  async function appendWatchLaterPanel (type, id) {
+    let aid;
+    if (type === 'ep') {
+      aid = await epid2aid(id);
+    } else {
+      aid = id.toString();
+    }
+    const watchLaterList = await getWatchLaterList();
+    const wrapper = document.createElement('div');
+    wrapper.className = 'watch-later-plus-wrapper';
+    const panel = document.createElement('div');
+    panel.className = 'watch-later-plus-panel';
+    const drawer = document.createElement('div');
+    drawer.className = 'watch-later-plus-drawer';
+    drawer.onclick = () => {
+      wrapper.classList.toggle('watch-later-plus-wrapper-show');
+    };
+    wrapper.appendChild(drawer);
+    wrapper.appendChild(panel);
+    for (const one of watchLaterList) {
+      const item = document.createElement('a');
+      item.classList.add('watch-later-plus-item');
+      if (aid === one.aid.toString()) {
+        item.classList.add('watch-later-plus-active');
+      }
+      item.href = `https://www.bilibili.com/video/av${one.aid}#watch-later-plus`;
+      const cover = document.createElement('div');
+      cover.className = 'watch-later-plus-cover';
+      const mask = document.createElement('div');
+      mask.className = 'watch-later-plus-mask';
+      const playing = document.createElement('div');
+      playing.className = 'watch-later-plus-playing';
+      playing.innerText = 'Playing';
+      const img = document.createElement('img');
+      img.className = 'watch-later-plus-img';
+      img.src = one.pic;
+      const duration = document.createElement('span');
+      duration.className = 'watch-later-plus-duration';
+      duration.innerText = second2Duration(one.duration);
+      const title = document.createElement('div');
+      title.className = 'watch-later-plus-title';
+      title.innerText = one.title;
+      mask.appendChild(playing);
+      cover.appendChild(mask);
+      cover.appendChild(img);
+      cover.appendChild(duration);
+      item.appendChild(cover);
+      item.appendChild(title);
+      panel.appendChild(item);
+    }
+    document.body.appendChild(wrapper);
+    GM_addStyle(`
+      .watch-later-plus-wrapper {
+        height: 100vh;
+        width: 200px;
+        padding: 0;
+        margin: 0;
+        position: fixed;
+        z-index: 99999;
+        top: 0;
+        left: -200px;
+        transition: left .2s;
+      }
+      .watch-later-plus-wrapper-show {
+        left: 0;
+      }
+      .watch-later-plus-wrapper-show .watch-later-plus-drawer {
+        height: 50px;
+        width: 50px;
+        right: -25px;
+        background-color: rgb(41, 153, 212);
+      }
+      .watch-later-plus-drawer {
+        height: 30px;
+        width: 30px;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        margin-top: auto;
+        margin-bottom: auto;
+        right: -15px;
+        background-color: rgb(41, 153, 212, 0.7);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: -1;
+        transition: background-color .1s, height .1s, width .1s, right .1s;
+      }
+      .watch-later-plus-drawer:hover {
+        height: 50px;
+        width: 50px;
+        right: -25px;
+        background-color: rgb(41, 153, 212);
+      }
+      .watch-later-plus-panel {
+        height: 100%;
+        width: 100%;
+        overflow-y: scroll;
+        background-color: white;
+      }
+      .watch-later-plus-item {
+        display: flex;
+        flex-direction: column;
+        width: 160px;
+        padding: 0;
+        margin: 10px auto;
+        text-decoration: none;
+        transition: background-color .2s;
+      }
+      .watch-later-plus-item:hover {
+        background-color: rgba(0, 0, 0, .3);
+      }
+      .watch-later-plus-item:hover .watch-later-plus-mask {
+        opacity: 1;
+      }
+      .watch-later-plus-active .watch-later-plus-title {
+        color: rgb(41, 153, 212);
+        font-weight: 700;
+      }
+      .watch-later-plus-active .watch-later-plus-mask {
+        opacity: 1;
+      }
+      .watch-later-plus-active .watch-later-plus-playing {
+        display: block;
+      }
+      .watch-later-plus-cover {
+        height: 100px;
+        width: 100%;
+        position: relative;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .watch-later-plus-img {
+        height: 100px;
+        width: 100%;
+      }
+      .watch-later-plus-duration {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        border-radius: 4px 0 0 0;
+        background-color: rgba(0, 0, 0, .5);
+        color: #eee;
+        font-size: 12px;
+        padding: 3px 5px;
+      }
+      .watch-later-plus-mask {
+        height: 100%;
+        width: 100%;
+        background-color: rgba(0, 0, 0, .3);
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity .2s;
+      }
+      .watch-later-plus-playing {
+        color: white;
+        font-size: 20px;
+        display: none;
+      }
+      .watch-later-plus-title {
+        font-size: 12px;
+        color: #222;
+        font-weight: 500;
+        height: 40px;
+        line-height: 20px;
+        overflow: hidden;
+        word-break: break-all;
+      }
+    `);
+  }
+  function second2Duration (seconds) {
+    const minute = Math.floor(seconds / 60).toString();
+    let second = (seconds % 60).toString();
+    second = `${second.length === 1 ? '0' : ''}${second}`;
+    return `${minute}:${second}`;
+  }
   async function epid2aid (epid) {
     const { data } = await axios.get(`https://www.bilibili.com/bangumi/play/ep${epid}`);
     const initState = JSON.parse(/window.__INITIAL_STATE__=(.*?);/.exec(data)[1]);
@@ -292,9 +472,13 @@
   // watchlater
   // replaceWatchLaterLink();
   if (location.href.includes('//www.bilibili.com/watchlater/#')) {
-    console.log('added');
     handlePlaying();
     window.addEventListener('popstate', handlePlaying);
+  } else {
+    const result = /(av|ep)(\d+)/.exec(location.href);
+    if (result && location.hash.includes('watch-later-plus')) {
+      appendWatchLaterPanel(result[1], result[2]);
+    }
   }
   // -----------------Run Immediately-----------------
 })();
