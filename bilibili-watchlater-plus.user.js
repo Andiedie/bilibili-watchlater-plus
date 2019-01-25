@@ -13,7 +13,7 @@
 // @require      https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js
 // ==/UserScript==
 
-(async function () {
+(async () => {
   'use strict';
   // -----------------Constant-----------------
   const BUTTON_CLASS_NAME = 'watch-later-plus';
@@ -42,7 +42,7 @@
 
   // -----------------Utils-----------------
   // 替换首页、动态iframe
-  const replaceIndex = _.debounce(function () {
+  const replaceIndex = _.debounce(() => {
     const list = $(`.watch-later-trigger`);
     if (list.length) {
       console.log('replaceIndex', list.length);
@@ -59,7 +59,7 @@
   }, DEBOUNCE_WAIT);
 
   // 处理首页番剧
-  const handleIndexBangumi = _.debounce(function () {
+  const handleIndexBangumi = _.debounce(() => {
     const list = $(`#bili_bangumi .spread-module:not(:has(.${BUTTON_CLASS_NAME}))`);
     if (list.length) {
       console.log('handleIndexBangumi', list.length);
@@ -73,7 +73,7 @@
   }, DEBOUNCE_WAIT);
 
   // 处理动态iframe番剧
-  const handleDynamicIframeBangumi = _.debounce(function () {
+  const handleDynamicIframeBangumi = _.debounce(() => {
     const list = $(`.d-data>.preview>a:not(:has(.${BUTTON_CLASS_NAME}))`);
     if (list.length) {
       console.log('handleDynamicIframeBangumi', list.length);
@@ -88,7 +88,7 @@
   }, DEBOUNCE_WAIT);
 
   // 替换空间
-  const replaceSpace = _.debounce(function (root) {
+  const replaceSpace = _.debounce(() => {
     const list = $('span.i-watchlater');
     if (list.length) {
       console.log('replaceSpace', list.length);
@@ -106,7 +106,7 @@
   }, DEBOUNCE_WAIT);
 
   // 替换动态首页
-  const replaceDynamicIndex = _.debounce(function (root) {
+  const replaceDynamicIndex = _.debounce(() => {
     const list = $('.see-later');
     if (list.length) {
       console.log('replaceDynamicIndex', list.length);
@@ -132,6 +132,13 @@
       const clone = createWatchLater(aid, ele);
       ele.appendChild(clone);
     });
+  }, DEBOUNCE_WAIT);
+
+  const handlePlaying = _.debounce(() => {
+    const result = /watchlater\/#\/av(\d+)/.exec(location.href);
+    if (result) {
+      location.href = `https://www.bilibili.com/video/av${result[1]}?watch-later-plus`;
+    }
   }, DEBOUNCE_WAIT);
 
   function createWatchLater (aid, parent) {
@@ -171,9 +178,9 @@
     };
     return clone;
   }
-  const watchLaterList = (function () {
+  const watchLaterList = (() => {
     let promise;
-    return function () {
+    return () => {
       if (!promise) {
         promise = getWatchLaterList().then(list => list.map(one => one.aid.toString()));
       }
@@ -263,6 +270,7 @@
         replaceSpace();
         replaceDynamicIndex();
         handleDynamicIndexBangumi();
+        // replaceWatchLaterLink();
       }
     }
   }).observe(document.body, {
@@ -281,5 +289,12 @@
   // t.bilibili.com
   replaceDynamicIndex();
   handleDynamicIndexBangumi();
+  // watchlater
+  // replaceWatchLaterLink();
+  if (location.href.includes('//www.bilibili.com/watchlater/#')) {
+    console.log('added');
+    handlePlaying();
+    window.addEventListener('popstate', handlePlaying);
+  }
   // -----------------Run Immediately-----------------
 })();
