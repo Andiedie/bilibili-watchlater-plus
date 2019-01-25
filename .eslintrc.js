@@ -9,11 +9,13 @@ module.exports = {
     axios: true,
     GM_addStyle: true,
     $: true,
+    _: true,
   },
   // https://github.com/feross/standard/blob/master/RULES.md#javascript-standard-style
   extends: 'standard',
   // add your custom rules here
   rules: {
     'semi': ['warn', 'always'],
+    'no-unused-vars': 0,
   }
 };
