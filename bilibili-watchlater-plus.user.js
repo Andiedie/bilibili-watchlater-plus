@@ -255,6 +255,22 @@
       const duration = document.createElement('span');
       duration.className = 'watch-later-plus-duration';
       duration.innerText = second2Duration(one.duration);
+      const remove = document.createElement('div');
+      remove.className = 'watch-later-plus-delete';
+      remove.setAttribute('data-aid', one.aid);
+      remove.onmouseenter = (event) => {
+        showHint('删除', event.currentTarget);
+      };
+      remove.onmouseout = () => {
+        hideHint();
+      };
+      remove.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const target = event.currentTarget;
+        await removeWatchLater(target.getAttribute('data-aid'));
+        $(target).parents('.watch-later-plus-item').remove();
+      };
       const title = document.createElement('div');
       title.className = 'watch-later-plus-title';
       title.innerText = one.title;
@@ -262,6 +278,7 @@
       cover.appendChild(mask);
       cover.appendChild(img);
       cover.appendChild(duration);
+      cover.appendChild(remove);
       item.appendChild(cover);
       item.appendChild(title);
       panel.appendChild(item);
@@ -330,6 +347,9 @@
       .watch-later-plus-item:hover .watch-later-plus-mask {
         opacity: 1;
       }
+      .watch-later-plus-item:hover .watch-later-plus-delete {
+        display: block;
+      }
       .watch-later-plus-active .watch-later-plus-title {
         color: rgb(41, 153, 212);
         font-weight: 700;
@@ -360,6 +380,21 @@
         color: #eee;
         font-size: 12px;
         padding: 3px 5px;
+      }
+      .watch-later-plus-delete {
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABLklEQVRYR+2WMU4CQRSGv7/B2NnQ2FhZ2uAB9AgcgsSKRq9hYkNBoWcw3gAOgJ2FvbG2g4LkN0uAAnbY2WVwQ9wpZ2fefPO9ydsnah6q+XyOC8B2DxgAJwFzM6Av6TnWbLQB26fAN3BWEPwHOJc0jYEoA/AAPALvkq7zgtueAB3gXtJTMgDbLeALaANdSW8BgC7wujR1IWleBBFlwPYdMAQ+gCtJDgBk8T6BS6An6SUawPYIuCnakOj7WNJtFmttoHaARDfbCmN7kS5JuemOegP7wFUGWKYkI1/kqurYB2Cnulig5AAhMzvmq72BEHmq+ZXB4CNMddAhUpCrtCxwY6AxcNQGst/2Von+s0IUW4JX65LXgf8HUPbGofWlG5LELdq6B9wEPHhHVGSwAfgFDfkPMBL6fc8AAAAASUVORK5CYII=');
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        height: 18px;
+        width: 18px;
+        background-size: 18px;
+        background-repeat: no-repeat;
+        background-color: rgba(0,0,0,0.5);
+        background-position: center;
+        border-radius: 50%;
+        padding: 5px;
+        display: none;
       }
       .watch-later-plus-mask {
         height: 100%;
@@ -431,7 +466,7 @@
         border-radius: 4px;
         line-height: 18px;
         padding: 4px 8px;
-        z-index: 99999;
+        z-index: 999999;
         background-color: #000;
       }
     `);
