@@ -8,6 +8,8 @@ module.exports = {
   globals: {
     axios: true,
     GM_addStyle: true,
+    GM_setValue: true,
+    GM_getValue: true,
     $: true,
     _: true,
   },

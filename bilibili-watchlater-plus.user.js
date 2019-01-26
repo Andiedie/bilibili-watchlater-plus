@@ -8,6 +8,8 @@
 // @description  Bilibili 稍后再看功能增强
 // @version      1.0.0
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
 // @require      https://cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.min.js
 // @require      https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js
 // @require      https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js
@@ -21,7 +23,7 @@
   const HINT_CLASS_NAME = 'watch-later-plus-hint';
 
   const DEBOUNCE_WAIT = 200;
-  // const SKIP_TOKEN = 'data-watch-later-plus-skip';
+  const PANEL_STATUS_KEY = '__PANEL_STATUS__';
   // -----------------Constant-----------------
 
   // -----------------Hint-----------------
@@ -232,7 +234,9 @@
     drawer.className = 'watch-later-plus-drawer';
     drawer.onclick = () => {
       wrapper.classList.toggle('watch-later-plus-wrapper-show');
+      GM_setValue(PANEL_STATUS_KEY, wrapper.classList.contains('watch-later-plus-wrapper-show'));
     };
+    wrapper.classList.toggle('watch-later-plus-wrapper-show', GM_getValue(PANEL_STATUS_KEY));
     wrapper.appendChild(drawer);
     wrapper.appendChild(panel);
     for (const one of watchLaterList) {
