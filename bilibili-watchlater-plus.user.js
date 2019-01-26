@@ -6,7 +6,7 @@
 // @homepageURL  https://github.com/Andiedie/bilibili-watchlater-plus
 // @include      /(.+.)?bilibili.com/
 // @description  Bilibili 稍后再看功能增强
-// @version      1.0.0
+// @version      1.0.1
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
