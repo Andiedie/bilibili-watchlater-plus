@@ -241,7 +241,8 @@
       if (aid === one.aid.toString()) {
         item.classList.add('watch-later-plus-active');
       }
-      item.href = `https://www.bilibili.com/video/av${one.aid}#watch-later-plus`;
+      const progress = one.progress ? `?t=${one.progress}` : '';
+      item.href = `https://www.bilibili.com/video/av${one.aid}${progress}#watch-later-plus`;
       const cover = document.createElement('div');
       cover.className = 'watch-later-plus-cover';
       const mask = document.createElement('div');
@@ -254,7 +255,8 @@
       img.src = one.pic;
       const duration = document.createElement('span');
       duration.className = 'watch-later-plus-duration';
-      duration.innerText = second2Duration(one.duration);
+      const watched = one.progress ? `已观看 : ${second2Duration(one.duration)} / ` : '';
+      duration.innerText = `${watched}${second2Duration(one.duration)}`;
       const remove = document.createElement('div');
       remove.className = 'watch-later-plus-delete';
       remove.setAttribute('data-aid', one.aid);
