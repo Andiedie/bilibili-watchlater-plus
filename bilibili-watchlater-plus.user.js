@@ -24,6 +24,7 @@
 
   const DEBOUNCE_WAIT = 200;
   const PANEL_STATUS_KEY = '__PANEL_STATUS__';
+  const SCROLL_POSITION_KEY = '__SCROLL_POSITION__';
   // -----------------Constant-----------------
 
   // -----------------Hint-----------------
@@ -230,6 +231,9 @@
     wrapper.className = 'watch-later-plus-wrapper';
     const panel = document.createElement('div');
     panel.className = 'watch-later-plus-panel';
+    panel.onscroll = _.debounce(() => {
+      GM_setValue(SCROLL_POSITION_KEY, panel.scrollTop.toString());
+    }, DEBOUNCE_WAIT);
     const drawer = document.createElement('div');
     drawer.className = 'watch-later-plus-drawer';
     drawer.onclick = () => {
@@ -289,6 +293,9 @@
       item.appendChild(title);
       panel.appendChild(item);
     }
+    setTimeout(() => {
+      panel.scrollTo(0, Number(GM_getValue(SCROLL_POSITION_KEY)) || 0);
+    }, 0);
     document.body.appendChild(wrapper);
     GM_addStyle(`
       .watch-later-plus-wrapper {
